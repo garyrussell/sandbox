@@ -1,0 +1,53 @@
+<%
+	missed_channels = measure('missed_channels')
+
+	covered = Integer(measure('channel_coverage').value)
+	notcovered = 100 - covered
+	
+#	piedata = 'Covered='
+#	piedata << covered.to_s 
+#	piedata << '; Not covered='
+#	piedata << notcovered.to_s
+
+    pielabels = "Covered|Not covered"
+    piedata = covered.to_s
+    piedata << ','
+    piedata << notcovered.to_s
+    
+    pieinfo = 'chs=240x100&cht=p&chco=00FF00,FF0000&chd=t:'
+    pieinfo << piedata
+    pieinfo << '&cht=p&chl='
+    pieinfo << pielabels
+	
+	if missed_channels
+	
+	    missed = Array.new
+		for item in missed_channels.data.split(';')
+			miss = item.split('=')
+			missed << miss
+		end
+
+%>
+
+<div>
+	<div class="dashbox">
+	  <h3><%= metric('channel_coverage').description -%></h3>
+	  <p>
+	    <span class="big">
+	      <%= format_measure('channel_coverage') -%> <%= tendency_icon(measure('channel_coverage')) %>
+	    </span>
+	  </p>
+	  <h3>Missed Channels</h3>
+	  <table>
+		<% for miss in missed %>
+			<tr><td><%= miss[0] %></td></tr>
+			<tr><td>&nbsp;&nbsp;<%= miss[1] %></td></tr>
+		<% end %>
+	  </table>
+	</div>
+	<div>
+<!--		<%= piechart(piedata, { :size => "240x100" }) -%> -->
+		<%= gchart(pieinfo) -%>
+	</div>
+</div>
+<% end %>
