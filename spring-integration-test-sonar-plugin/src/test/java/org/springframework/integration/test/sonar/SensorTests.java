@@ -67,4 +67,29 @@ public class SensorTests {
 		tmpFile.delete();
 	}
 
+	@Test
+	public void testZero() throws Exception {
+		Project project = new Project("test");
+		ProjectFileSystem pfs = mock(ProjectFileSystem.class);
+		SpringIntegrationSensor sensor = new SpringIntegrationSensor(pfs);
+		File tmpDir = new File(System.getProperty("java.io.tmpdir"));
+		when(pfs.getBuildDir()).thenReturn(tmpDir);
+		File tmpFile = new File(tmpDir, "si.coverage");
+		FileOutputStream fos = new FileOutputStream(tmpFile);
+		fos.write("0.0|0.0|ABC|[]\n".getBytes());
+		fos.close();
+		SensorContext sensorContext = mock(SensorContext.class);
+		stub(sensorContext.saveMeasure(any(Measure.class))).toAnswer(
+				new Answer<Measure>() {
+					public Measure answer(InvocationOnMock invocation)
+							throws Throwable {
+						Measure measure = (Measure) invocation.getArguments()[0];
+						assertEquals("ABC=[];", measure.getData());
+						return measure;
+					}
+				});
+		sensor.analyse(project, sensorContext);
+		verify(sensorContext).saveMeasure(SpringIntegrationMetrics.COVERAGE, 0.0);
+		tmpFile.delete();
+	}
 }

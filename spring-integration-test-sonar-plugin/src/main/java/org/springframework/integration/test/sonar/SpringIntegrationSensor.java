@@ -41,7 +41,7 @@ public class SpringIntegrationSensor implements Sensor {
 					float cnt = Float.parseFloat(splits[1]);
 					covered += cov;
 					channelCount += cnt;
-					if (cov < cnt) {
+					if (cnt == 0 || cov < cnt) {
 						uncovered.put(splits[2], splits[3]);
 					}
 				}
@@ -53,8 +53,9 @@ public class SpringIntegrationSensor implements Sensor {
 		} else {
 			return;
 		}
-		sensorContext.saveMeasure(SpringIntegrationMetrics.COVERAGE, covered / channelCount * 100.0);
 		StringBuilder sb = new StringBuilder();
+		sensorContext.saveMeasure(SpringIntegrationMetrics.COVERAGE,
+				channelCount == 0 ? 0.0 : covered / channelCount * 100.0);
 		for (String key : uncovered.keySet()) {
 			sb.append(key).append("=").append(uncovered.get(key)).append(";");
 		}
