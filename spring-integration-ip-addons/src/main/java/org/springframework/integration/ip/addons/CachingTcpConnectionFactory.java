@@ -65,17 +65,8 @@ public class CachingTcpConnectionFactory extends AbstractClientConnectionFactory
 	public TcpConnection getConnection() throws Exception {
 		TcpConnection connection = null;
 		synchronized (this.targetConnectionFactory) {
-			while (this.available.size() > 0) {
-				TcpConnection aConnection = this.available.poll();
-				if (!aConnection.isOpen()) {
-					continue;
-				}
-				if (logger.isDebugEnabled()) {
-					logger.debug("Retrieved " + aConnection.getConnectionId() + " from cache");
-				}
-				this.inUse.add(aConnection);
-				connection = aConnection;
-				break;
+			while (connection == null && this.available.size() > 0) {
+				connection = retrieveConnection(-1);
 			}
 			if (connection == null) {
 				if (this.getAllocated() < this.poolSize) {
@@ -84,13 +75,24 @@ public class CachingTcpConnectionFactory extends AbstractClientConnectionFactory
 					if (logger.isDebugEnabled()) {
 						logger.debug("Created new connection " + connection.getConnectionId());
 					}
-				} else if (this.availableTimeout > 0) {
-					connection = this.available.poll(this.availableTimeout, TimeUnit.MILLISECONDS);
 				}
 			}
 		}
 		if (connection == null) {
-			throw new MessagingException("No connections available");
+			long now = System.currentTimeMillis();
+			int timeout = this.availableTimeout;
+			while (connection == null) {
+				if (timeout > 0) {
+					if (logger.isDebugEnabled()) {
+						logger.debug("Waiting for connection to become available");
+					}
+					connection = retrieveConnection(timeout);
+				}
+				timeout -= (System.currentTimeMillis() - now);
+				if (connection == null && timeout <= 0) {
+					throw new MessagingException("No connections available");
+				}
+			}
 		}
 		return connection;
 	}
@@ -104,6 +106,34 @@ public class CachingTcpConnectionFactory extends AbstractClientConnectionFactory
 		return new CachedConnection(connection);
 
 	}
+
+	protected TcpConnection retrieveConnection(int timeout) throws Exception {
+		TcpConnection connection;
+		if (timeout > 0) {
+			connection = this.available.poll(timeout,
+				TimeUnit.MILLISECONDS);
+		} else {
+			connection = this.available.poll();
+		}
+		if (connection == null) {
+			return null;
+		}
+		if (!connection.isOpen()) {
+			if (logger.isDebugEnabled()) {
+				logger.debug(connection.getConnectionId() + " is closed, trying another");
+			}
+			return null;
+		}
+		synchronized (this.targetConnectionFactory) {
+			this.inUse.add(connection);
+		}
+		if (logger.isDebugEnabled() && connection != null) {
+			logger.debug("Retrieved " + connection.getConnectionId()
+					+ " from cache");
+		}
+		return connection;
+	}
+
 
 	protected int getAllocated() {
 		synchronized (this.targetConnectionFactory) {
@@ -136,6 +166,15 @@ public class CachingTcpConnectionFactory extends AbstractClientConnectionFactory
 	@Override
 	public void close() {
 		targetConnectionFactory.close();
+	}
+
+
+
+	/**
+	 * @param availableTimeout the availableTimeout to set
+	 */
+	public void setAvailableTimeout(int availableTimeout) {
+		this.availableTimeout = availableTimeout;
 	}
 
 

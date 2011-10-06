@@ -34,6 +34,7 @@
 	<bean id="caching.ccf" class="org.springframework.integration.ip.addons.CachingTcpConnectionFactory">
 		<constructor-arg ref="ccf" />
 		<property name="poolSize" value="10" />
+		<property name="availableTimeout" value="10000"/>
 	</bean>
 
 	<int-ip:tcp-outbound-channel-adapter

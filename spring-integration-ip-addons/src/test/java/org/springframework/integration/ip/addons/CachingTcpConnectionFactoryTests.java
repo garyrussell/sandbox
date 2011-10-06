@@ -17,6 +17,7 @@ package org.springframework.integration.ip.addons;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -55,8 +56,8 @@ public class CachingTcpConnectionFactoryTests {
 	public void testReuse() throws Exception {
 		AbstractClientConnectionFactory factory = mock(AbstractClientConnectionFactory.class);
 		when(factory.isRunning()).thenReturn(true);
-		TcpConnection mockConn1 = makeMockConnection();
-		TcpConnection mockConn2 = makeMockConnection();
+		TcpConnection mockConn1 = makeMockConnection("conn1");
+		TcpConnection mockConn2 = makeMockConnection("conn2");
 		when(factory.getConnection()).thenReturn(mockConn1).thenReturn(mockConn2);
 		CachingTcpConnectionFactory cachingFactory = new CachingTcpConnectionFactory(factory);
 		TcpConnection conn1 = cachingFactory.getConnection();
@@ -70,12 +71,12 @@ public class CachingTcpConnectionFactoryTests {
 		assertEquals("Cached:" + mockConn2.toString(), conn2.toString());
 	}
 
-	@Test @ExpectedException(MessagingException.class)
-	public void testLimit() throws Exception {
+	@Test
+	public void testReuseClosed() throws Exception {
 		AbstractClientConnectionFactory factory = mock(AbstractClientConnectionFactory.class);
 		when(factory.isRunning()).thenReturn(true);
-		TcpConnection mockConn1 = makeMockConnection();
-		TcpConnection mockConn2 = makeMockConnection();
+		TcpConnection mockConn1 = makeMockConnection("conn1");
+		TcpConnection mockConn2 = makeMockConnection("conn2");
 		when(factory.getConnection()).thenReturn(mockConn1).thenReturn(mockConn2);
 		CachingTcpConnectionFactory cachingFactory = new CachingTcpConnectionFactory(factory);
 		TcpConnection conn1 = cachingFactory.getConnection();
@@ -85,17 +86,73 @@ public class CachingTcpConnectionFactoryTests {
 		assertEquals("Cached:" + mockConn1.toString(), conn1.toString());
 		TcpConnection conn2 = cachingFactory.getConnection();
 		assertEquals("Cached:" + mockConn2.toString(), conn2.toString());
+		conn1.close();
+		conn2.close();
+		when(mockConn1.isOpen()).thenReturn(false);
+		conn1 = cachingFactory.getConnection();
+		assertEquals("Cached:" + mockConn2.toString(), conn1.toString());
+		conn1.close();
+	}
+
+	@Test @ExpectedException(MessagingException.class)
+	public void testLimit() throws Exception {
+		AbstractClientConnectionFactory factory = mock(AbstractClientConnectionFactory.class);
+		when(factory.isRunning()).thenReturn(true);
+		TcpConnection mockConn1 = makeMockConnection("conn1");
+		TcpConnection mockConn2 = makeMockConnection("conn2");
+		when(factory.getConnection()).thenReturn(mockConn1).thenReturn(mockConn2);
+		CachingTcpConnectionFactory cachingFactory = new CachingTcpConnectionFactory(factory);
+		TcpConnection conn1 = cachingFactory.getConnection();
+		assertEquals("Cached:" + mockConn1.toString(), conn1.toString());
+		conn1.close();
+		conn1 = cachingFactory.getConnection();
+		assertEquals("Cached:" + mockConn1.toString(), conn1.toString());
+		final TcpConnection conn2 = cachingFactory.getConnection();
+		assertEquals("Cached:" + mockConn2.toString(), conn2.toString());
 		@SuppressWarnings("unused")
 		TcpConnection conn3 = cachingFactory.getConnection();
+	}
+
+	@Test
+	public void testLimitWithTimeout() throws Exception {
+		AbstractClientConnectionFactory factory = mock(AbstractClientConnectionFactory.class);
+		when(factory.isRunning()).thenReturn(true);
+		TcpConnection mockConn1 = makeMockConnection("conn1");
+		TcpConnection mockConn2 = makeMockConnection("conn2");
+		when(factory.getConnection()).thenReturn(mockConn1).thenReturn(mockConn2);
+		CachingTcpConnectionFactory cachingFactory = new CachingTcpConnectionFactory(factory);
+		TcpConnection conn1 = cachingFactory.getConnection();
+		assertEquals("Cached:" + mockConn1.toString(), conn1.toString());
+		conn1.close();
+		conn1 = cachingFactory.getConnection();
+		assertEquals("Cached:" + mockConn1.toString(), conn1.toString());
+		final TcpConnection conn2 = cachingFactory.getConnection();
+		assertEquals("Cached:" + mockConn2.toString(), conn2.toString());
+		cachingFactory.setAvailableTimeout(1000);
+		new Thread(new Runnable() {
+			public void run() {
+				try {
+					Thread.sleep(200);
+				} catch (InterruptedException e) {}
+				conn2.close();
+			}
+		}).start();
+		TcpConnection conn2a = cachingFactory.getConnection();
+		assertEquals("Cached:" + mockConn2.toString(), conn2a.toString());
+		try {
+			@SuppressWarnings("unused")
+			TcpConnection conn3 = cachingFactory.getConnection();
+			fail("Expected exception");
+		} catch (MessagingException e) {}
 	}
 
 	/**
 	 * @return
 	 */
-	private TcpConnection makeMockConnection() {
+	private TcpConnection makeMockConnection(String name) {
 		TcpConnection mockConn1 = mock(TcpConnection.class);
-		when(mockConn1.getConnectionId()).thenReturn("conn1");
-		when(mockConn1.toString()).thenReturn("conn1");
+		when(mockConn1.getConnectionId()).thenReturn(name);
+		when(mockConn1.toString()).thenReturn(name);
 		when(mockConn1.isOpen()).thenReturn(true);
 		doThrow(new RuntimeException("close() not expected")).when(mockConn1).close();
 		return mockConn1;
