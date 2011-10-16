@@ -62,8 +62,33 @@ public class CachingTcpConnectionFactory extends AbstractClientConnectionFactory
 		this.targetConnectionFactory = target;
 	}
 
-	public TcpConnection getConnection() throws Exception {
+	public TcpConnection getOrMakeConnection() throws Exception {
 		TcpConnection connection = null;
+		connection = getConnectionNoWait(connection);
+		if (connection == null) {
+			long now = System.currentTimeMillis();
+			int timeout = this.availableTimeout;
+			while (connection == null) {
+				if (timeout > 0) {
+					if (logger.isDebugEnabled()) {
+						logger.debug("Waiting for connection to become available");
+					}
+					connection = retrieveConnection(timeout);
+				}
+				if (connection == null) {
+					connection = getConnectionNoWait(connection);
+				}
+				timeout -= (System.currentTimeMillis() - now);
+				if (connection == null && timeout <= 0) {
+					throw new MessagingException("No connections available");
+				}
+			}
+		}
+		return connection;
+	}
+
+	protected TcpConnection getConnectionNoWait(TcpConnection connection)
+			throws Exception {
 		synchronized (this.targetConnectionFactory) {
 			while (connection == null && this.available.size() > 0) {
 				connection = retrieveConnection(-1);
@@ -75,22 +100,6 @@ public class CachingTcpConnectionFactory extends AbstractClientConnectionFactory
 					if (logger.isDebugEnabled()) {
 						logger.debug("Created new connection " + connection.getConnectionId());
 					}
-				}
-			}
-		}
-		if (connection == null) {
-			long now = System.currentTimeMillis();
-			int timeout = this.availableTimeout;
-			while (connection == null) {
-				if (timeout > 0) {
-					if (logger.isDebugEnabled()) {
-						logger.debug("Waiting for connection to become available");
-					}
-					connection = retrieveConnection(timeout);
-				}
-				timeout -= (System.currentTimeMillis() - now);
-				if (connection == null && timeout <= 0) {
-					throw new MessagingException("No connections available");
 				}
 			}
 		}
@@ -288,14 +297,6 @@ public class CachingTcpConnectionFactory extends AbstractClientConnectionFactory
 	 */
 	public void setSoReceiveBufferSize(int soReceiveBufferSize) {
 		targetConnectionFactory.setSoReceiveBufferSize(soReceiveBufferSize);
-	}
-
-	/**
-	 * @return
-	 * @see org.springframework.integration.context.IntegrationObjectSupport#toString()
-	 */
-	public String toString() {
-		return targetConnectionFactory.toString();
 	}
 
 	/**
@@ -529,6 +530,7 @@ public class CachingTcpConnectionFactory extends AbstractClientConnectionFactory
 	 * @see org.springframework.integration.ip.tcp.connection.AbstractConnectionFactory#start()
 	 */
 	public void start() {
+		this.setActive(true);
 		targetConnectionFactory.start();
 	}
 

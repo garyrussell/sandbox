@@ -24,6 +24,7 @@ import static org.mockito.Mockito.when;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.integration.Message;
 import org.springframework.integration.MessagingException;
@@ -60,6 +61,7 @@ public class CachingTcpConnectionFactoryTests {
 		TcpConnection mockConn2 = makeMockConnection("conn2");
 		when(factory.getConnection()).thenReturn(mockConn1).thenReturn(mockConn2);
 		CachingTcpConnectionFactory cachingFactory = new CachingTcpConnectionFactory(factory);
+		cachingFactory.start();
 		TcpConnection conn1 = cachingFactory.getConnection();
 		assertEquals("Cached:" + mockConn1.toString(), conn1.toString());
 		conn1.close();
@@ -79,6 +81,7 @@ public class CachingTcpConnectionFactoryTests {
 		TcpConnection mockConn2 = makeMockConnection("conn2");
 		when(factory.getConnection()).thenReturn(mockConn1).thenReturn(mockConn2);
 		CachingTcpConnectionFactory cachingFactory = new CachingTcpConnectionFactory(factory);
+		cachingFactory.start();
 		TcpConnection conn1 = cachingFactory.getConnection();
 		assertEquals("Cached:" + mockConn1.toString(), conn1.toString());
 		conn1.close();
@@ -102,6 +105,7 @@ public class CachingTcpConnectionFactoryTests {
 		TcpConnection mockConn2 = makeMockConnection("conn2");
 		when(factory.getConnection()).thenReturn(mockConn1).thenReturn(mockConn2);
 		CachingTcpConnectionFactory cachingFactory = new CachingTcpConnectionFactory(factory);
+		cachingFactory.start();
 		TcpConnection conn1 = cachingFactory.getConnection();
 		assertEquals("Cached:" + mockConn1.toString(), conn1.toString());
 		conn1.close();
@@ -121,6 +125,7 @@ public class CachingTcpConnectionFactoryTests {
 		TcpConnection mockConn2 = makeMockConnection("conn2");
 		when(factory.getConnection()).thenReturn(mockConn1).thenReturn(mockConn2);
 		CachingTcpConnectionFactory cachingFactory = new CachingTcpConnectionFactory(factory);
+		cachingFactory.start();
 		TcpConnection conn1 = cachingFactory.getConnection();
 		assertEquals("Cached:" + mockConn1.toString(), conn1.toString());
 		conn1.close();
