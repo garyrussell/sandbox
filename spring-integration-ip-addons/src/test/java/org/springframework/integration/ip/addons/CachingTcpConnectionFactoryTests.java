@@ -24,7 +24,6 @@ import static org.mockito.Mockito.when;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.beans.DirectFieldAccessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.integration.Message;
 import org.springframework.integration.MessagingException;
@@ -32,6 +31,7 @@ import org.springframework.integration.core.PollableChannel;
 import org.springframework.integration.core.SubscribableChannel;
 import org.springframework.integration.ip.IpHeaders;
 import org.springframework.integration.ip.tcp.connection.AbstractClientConnectionFactory;
+import org.springframework.integration.ip.tcp.connection.AbstractServerConnectionFactory;
 import org.springframework.integration.ip.tcp.connection.TcpConnection;
 import org.springframework.integration.message.GenericMessage;
 import org.springframework.test.annotation.ExpectedException;
@@ -52,6 +52,9 @@ public class CachingTcpConnectionFactoryTests {
 
 	@Autowired
 	PollableChannel inbound;
+
+	@Autowired
+	AbstractServerConnectionFactory serverCf;
 
 	@Test
 	public void testReuse() throws Exception {
@@ -164,7 +167,15 @@ public class CachingTcpConnectionFactoryTests {
 	}
 
 	@Test
-	public void integrationTest() {
+	public void integrationTest() throws Exception {
+		int n = 0;
+		while (!serverCf.isListening()) {
+			Thread.sleep(100);
+			n++;
+			if (n > 10000) {
+				fail("Server didn't begin listening");
+			}
+		}
 		outbound.send(new GenericMessage<String>("Hello, world!"));
 		Message<?> m = inbound.receive(1000);
 		assertNotNull(m);
