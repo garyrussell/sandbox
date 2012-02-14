@@ -17,3 +17,4 @@ lib
 logs
 target
 build.log
+.springBeans
