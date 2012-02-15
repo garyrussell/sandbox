@@ -10,7 +10,7 @@
 
 	<bean id="connectionFactory" class="org.springframework.integration.vertx.WebSocketServerSIBridge$WebSocketServerConnectionFactory" />
 
-	<bean id="service" class="org.springframework.integration.vertx.WebSocketServerTests$Service" />
+	<bean id="service" class="org.springframework.integration.vertx.DemoService" />
 
 	<int-ip:tcp-inbound-channel-adapter 
 		connection-factory="connectionFactory"
