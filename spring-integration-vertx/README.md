@@ -2,11 +2,10 @@
 
 ###Intro
 
-Demonstrates a bridge between a vert.x WebSockets server and a Spring Integration flow.
-
-The bridge is made to "look" like a TcpConnectionFactory, anabling it to be hooked into existing inbound and outbound channel adapters.
+Demonstrates the configuration of the vert.x library as a Spring Integration server TcpConnectionFactory, allowing bidirectional communication between an S.I. app and a browser WebSocket.
 
 The example serves up a simple web page that enables an
+
 
     <int:inbound-channel-adapter/>
 
@@ -17,34 +16,23 @@ When the adapter is started, it sends an incrementing integer once per second to
 Multiple browser tabs/instances can be run concurrently and started/stopped independently.
 
 
-A minor patch to vert.x removes a classpath check...
-
-https://github.com/garyrussell/vert.x/commit/15ba56dfdc5eb50bd9958eb71307e5cdfbc18bd8
-
-...so far this does not appear to have affected anything.
-
 ###Maven
 
-The project uses maven for dependency resolution; vert.x is not mavenized so, after building vert.x with the above patch, you need to manually install 3 jars into your maven repo...
+The project uses maven for (most of its) dependency resolution; vert.x is not currently mavenized so its libraries are added to the classpath manually - for eclipse/STS users, add a classpath variable VERTX_LIB pointing to the build directory - in my case:
 
-    mvn install:install-file -DgroupId=tim.fox -DartifactId=vertx -Dversion=1.0.0 -Dpackaging=jar -Dfile=/path/to/vert.x/target/dist-build/vert.x-1.0/lib/java/vert.x.jar
-
-    mvn install:install-file -DgroupId=tim.fox -DartifactId=js -Dversion=1.0.0 -Dpackaging=jar -Dfile=/path/to/vert.x/target/dist-build/vert.x-1.0/lib/java/js.jar
-
-    mvn install:install-file -DgroupId=tim.fox -DartifactId=netty -Dversion=1.0.0 -Dpackaging=jar -Dfile=/path/to/vert.x/target/dist-build/vert.x-1.0/lib/java/netty.jar
+    VERTX_LIB=/home/.../vert.x/target/dist-build/vert.x-1.0.beta1/lib/jars
 
 
 ###Running the example
 
-     mvn package -P WebSockets
+Run the Main program as a java application. If you are not using STS, you will need the maven dependencies as well as the 3 jars from VERTX_LIB as can be seen in the eclipse .classpath file.
 
-(Or set up an STS launcher with the parameters shown in the pom &lt;profile/&gt;)
 
 Open a web browser at
 
     http://localhost:8080/
 
 
-Send 'start' and you'll see the counter incrementing; 'stop' stops the counter (restarting currently starts at 1 again).
+Send 'start' and you'll see the counter incrementing; 'stop' stops the counter (restarting will resume from where we left off).
 
 

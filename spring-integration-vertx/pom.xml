@@ -67,21 +67,21 @@
 			<artifactId>groovy-all</artifactId>
 			<version>1.8.3</version>
 		</dependency>
-		<dependency>
-			<groupId>tim.fox</groupId>
-			<artifactId>js</artifactId>
-			<version>1.0.0</version>
-		</dependency>
-		<dependency>
-			<groupId>tim.fox</groupId>
-			<artifactId>netty</artifactId>
-			<version>1.0.0</version>
-		</dependency>
-		<dependency>
-			<groupId>tim.fox</groupId>
-			<artifactId>vertx</artifactId>
-			<version>1.0.0</version>
-		</dependency>
+<!-- 		<dependency> -->
+<!-- 			<groupId>tim.fox</groupId> -->
+<!-- 			<artifactId>js</artifactId> -->
+<!-- 			<version>1.0.0</version> -->
+<!-- 		</dependency> -->
+<!-- 		<dependency> -->
+<!-- 			<groupId>tim.fox</groupId> -->
+<!-- 			<artifactId>netty</artifactId> -->
+<!-- 			<version>1.0.0</version> -->
+<!-- 		</dependency> -->
+<!-- 		<dependency> -->
+<!-- 			<groupId>tim.fox</groupId> -->
+<!-- 			<artifactId>vertx</artifactId> -->
+<!-- 			<version>1.0.0</version> -->
+<!-- 		</dependency> -->
 	</dependencies>
 
 	<build>
@@ -97,33 +97,4 @@
 		</plugins>
 	</build>
 
-	<profiles>
-		<profile>
-			<id>WebSockets</id>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>org.codehaus.mojo</groupId>
-						<artifactId>exec-maven-plugin</artifactId>
-						<version>1.1</version>
-						<executions>
-							<execution>
-								<goals>
-									<goal>java</goal>
-								</goals>
-								<phase>test</phase>
-							</execution>
-						</executions>
-						<configuration>
-							<mainClass>org.vertx.java.core.app.cli.VertxMgr</mainClass>
-							<arguments>
-								<argument>run</argument>
-								<argument>org.springframework.integration.vertx.WebSocketServer</argument>
-							</arguments>
-						</configuration>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
-	</profiles>
 </project>

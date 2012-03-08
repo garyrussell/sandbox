@@ -8,7 +8,9 @@
 		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
 
 
-	<bean id="connectionFactory" class="org.springframework.integration.vertx.WebSocketServerSIBridge$WebSocketServerConnectionFactory" />
+	<bean id="connectionFactory" class="org.springframework.integration.vertx.WebSocketServer">
+		<constructor-arg value="8080"/>
+	</bean>
 
 	<bean id="service" class="org.springframework.integration.vertx.DemoService" />
 

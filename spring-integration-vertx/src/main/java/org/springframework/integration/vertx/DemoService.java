@@ -31,7 +31,6 @@ import org.springframework.integration.support.MessageBuilder;
 
 /**
  * @author Gary Russell
- * @since 2.1
  *
  */
 public class DemoService {
@@ -40,14 +39,21 @@ public class DemoService {
 
 	private final Map<String, AtomicInteger> clients = new HashMap<>();
 
+	private final Map<String, AtomicInteger> paused = new HashMap<>();
+
 	public void startStop(String command, @Header(IpHeaders.CONNECTION_ID) String connectionId) {
 		if ("stop".equalsIgnoreCase(command)) {
-			clients.remove(connectionId);
+			AtomicInteger clientInt = clients.remove(connectionId);
+			if (clientInt != null) {
+				paused.put(connectionId, clientInt);
+			}
 			logger.info("Connection " + connectionId + " stopped");
 		}
 		else if ("start".equalsIgnoreCase(command)) {
-			clients.put(connectionId, new AtomicInteger());
-			logger.info("Connection " + connectionId + " started");
+			AtomicInteger clientInt = paused.remove(connectionId);
+			clientInt = clientInt == null ? new AtomicInteger() : clientInt;
+			clients.put(connectionId, clientInt);
+			logger.info("Connection " + connectionId + " (re)started");
 		}
 	}
 

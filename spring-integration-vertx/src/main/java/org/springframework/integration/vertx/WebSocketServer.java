@@ -17,8 +17,12 @@ package org.springframework.integration.vertx;
 
 import java.util.UUID;
 
+import org.springframework.context.SmartLifecycle;
+import org.springframework.integration.ip.IpHeaders;
+import org.springframework.integration.ip.tcp.connection.AbstractServerConnectionFactory;
+import org.springframework.integration.ip.tcp.connection.TcpListener;
+import org.springframework.integration.support.MessageBuilder;
 import org.vertx.java.core.Handler;
-import org.vertx.java.core.app.Verticle;
 import org.vertx.java.core.buffer.Buffer;
 import org.vertx.java.core.http.HttpServer;
 import org.vertx.java.core.http.HttpServerRequest;
@@ -26,14 +30,15 @@ import org.vertx.java.core.http.ServerWebSocket;
 
 /**
  * @author Gary Russell
- * @since 2.1
  *
  */
-public class WebSocketServer implements Verticle {
+public class WebSocketServer extends AbstractServerConnectionFactory implements SmartLifecycle {
+
+	public WebSocketServer(int port) {
+		super(port);
+	}
 
 	private HttpServer server;
-
-	private static final WebSocketServerSIBridge bridge = new WebSocketServerSIBridge();
 
 	public void start() {
 		this.server = new HttpServer()
@@ -41,11 +46,18 @@ public class WebSocketServer implements Verticle {
 					public void handle(final ServerWebSocket ws) {
 						final String correlationId = UUID.randomUUID()
 								.toString();
-						bridge.registerSocket(ws, correlationId);
+						final TcpListener listener = WebSocketServer.this.getListener();
+						WebSocketConnection connection = new WebSocketConnection(
+								correlationId, ws, listener);
+						WebSocketServer.this.getSender().addNewConnection(connection);
 						if (ws.path.equals("/myapp")) {
 							ws.dataHandler(new Handler<Buffer>() {
 								public void handle(Buffer data) {
-									bridge.doSend(data.toString(), correlationId);
+									listener.onMessage(MessageBuilder
+											.withPayload(data.toString())
+											.setCorrelationId(correlationId)
+											.setHeader(IpHeaders.CONNECTION_ID, correlationId)
+											.build());
 								}
 							});
 						} else {
@@ -57,11 +69,47 @@ public class WebSocketServer implements Verticle {
 						if (req.path.equals("/"))
 							req.response.sendFile("ws.html"); // Serve the html
 					}
-				}).listen(8080);
+				}).listen(this.getPort());
 	}
 
-	public void stop() throws Exception {
+	public void stop() {
 		this.server.close();
+	}
+
+	@Override
+	public boolean isRunning() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public int getPhase() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public boolean isAutoStartup() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public void stop(Runnable callback) {
+		this.stop();
+		callback.run();
+	}
+
+	@Override
+	public void run() {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void close() {
+		// TODO Auto-generated method stub
+
 	}
 
 }
