@@ -23,6 +23,7 @@ import org.springframework.integration.ip.tcp.connection.AbstractServerConnectio
 import org.springframework.integration.ip.tcp.connection.TcpListener;
 import org.springframework.integration.support.MessageBuilder;
 import org.vertx.java.core.Handler;
+import org.vertx.java.core.Vertx;
 import org.vertx.java.core.buffer.Buffer;
 import org.vertx.java.core.http.HttpServer;
 import org.vertx.java.core.http.HttpServerRequest;
@@ -40,8 +41,13 @@ public class WebSocketServer extends AbstractServerConnectionFactory implements 
 
 	private HttpServer server;
 
-	public void start() {
-		this.server = new HttpServer()
+	private volatile boolean running;
+
+	public synchronized void start() {
+		if (this.running) {
+			return;
+		}
+		this.server = Vertx.newVertx().createHttpServer()
 				.websocketHandler(new Handler<ServerWebSocket>() {
 					public void handle(final ServerWebSocket ws) {
 						final String correlationId = UUID.randomUUID()
@@ -70,16 +76,17 @@ public class WebSocketServer extends AbstractServerConnectionFactory implements 
 							req.response.sendFile("ws.html"); // Serve the html
 					}
 				}).listen(this.getPort());
+		this.running = true;
 	}
 
 	public void stop() {
+		this.running = false;
 		this.server.close();
 	}
 
 	@Override
 	public boolean isRunning() {
-		// TODO Auto-generated method stub
-		return false;
+		return this.running;
 	}
 
 	@Override
