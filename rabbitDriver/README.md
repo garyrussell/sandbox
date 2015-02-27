@@ -1,5 +1,7 @@
 RabbitMQ Driver Using Spring AMQP `RabbitTemplate` or the native java `Channel`.
 
+Server address(es) are in `src/main/resources/application.properties`.
+
     $ mvn package
 	
 	$ java -jar target/rabbitdriver-0.0.1-SNAPSHOT.jar --count=500000 --queue=q1 --instances=2 --useTemplate=false
