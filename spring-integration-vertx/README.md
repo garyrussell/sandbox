@@ -16,16 +16,9 @@ When the adapter is started, it sends an incrementing integer once per second to
 Multiple browser tabs/instances can be run concurrently and started/stopped independently.
 
 
-###Maven
-
-The project uses maven for (most of its) dependency resolution; vert.x is not currently mavenized so its libraries are added to the classpath manually - for eclipse/STS users, add a classpath variable VERTX_LIB pointing to the build directory - in my case:
-
-    VERTX_LIB=/home/.../vert.x/target/dist-build/vert.x-1.0.beta1/lib/jars
-
-
 ###Running the example
 
-Run the Main program as a java application. If you are not using STS, you will need the maven dependencies as well as the 3 jars from VERTX_LIB as can be seen in the eclipse .classpath file.
+Run the Main program as a java application.
 
 
 Open a web browser at

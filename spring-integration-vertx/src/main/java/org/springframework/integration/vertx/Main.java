@@ -18,16 +18,19 @@ package org.springframework.integration.vertx;
 import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
+
 /**
  * @author Gary Russell
- *
  */
-public class Main {
+public class Main
+{
 
-	public static void main(String[] args) throws Exception {
-		AbstractApplicationContext ctx = new ClassPathXmlApplicationContext("META-INF/spring/integration/ws-context.xml");
-		System.out.println("Hit enter to terminate...");
-		System.in.read();
-		ctx.close();
-	}
+    public static void main(String[] args) throws Exception
+    {
+        AbstractApplicationContext ctx = new ClassPathXmlApplicationContext(
+            "META-INF/spring/integration/ws-context.xml");
+        System.out.println("Hit enter to terminate...");
+        System.in.read();
+        ctx.close();
+    }
 }

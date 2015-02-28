@@ -15,129 +15,141 @@
  */
 package org.springframework.integration.vertx;
 
+import java.util.Optional;
+
+import io.vertx.core.http.ServerWebSocket;
+import io.vertx.core.http.WebSocketFrame;
+
 import org.springframework.core.serializer.Deserializer;
 import org.springframework.core.serializer.Serializer;
-import org.springframework.integration.Message;
 import org.springframework.integration.ip.tcp.connection.TcpConnection;
 import org.springframework.integration.ip.tcp.connection.TcpListener;
-import org.springframework.integration.ip.tcp.connection.TcpMessageMapper;
-import org.springframework.integration.ip.tcp.connection.TcpSender;
-import org.vertx.java.core.http.ServerWebSocket;
+import org.springframework.messaging.Message;
+
 
 /**
+ * 
  * @author Gary Russell
- *
+ * 
  */
-public class WebSocketConnection implements TcpConnection {
+public class WebSocketConnection implements TcpConnection
+{
 
-	private final String id;
+    private final String id;
 
-	private final ServerWebSocket socket;
+    private final ServerWebSocket socket;
 
-	private final TcpListener listener;
+    private final TcpListener listener;
 
-	public WebSocketConnection(String id, ServerWebSocket socket, TcpListener listener) {
-		this.id = id;
-		this.socket = socket;
-		this.listener = listener;
-	}
+    public WebSocketConnection(String id, ServerWebSocket socket, TcpListener listener)
+    {
+        this.id = id;
+        this.socket = socket;
+        this.listener = listener;
+    }
 
-	@Override
-	public void run() {
-	}
+    @Override
+    public void run()
+    {
+        // TODO Auto-generated method stub
 
-	@Override
-	public void close() {
-	}
+    }
 
-	@Override
-	public String getConnectionId() {
-		return this.id;
-	}
+    @Override
+    public void close()
+    {
+        // TODO Auto-generated method stub
 
-	@Override
-	public Deserializer<?> getDeserializer() {
-		return null;
-	}
+    }
 
-	@Override
-	public String getHostAddress() {
-		return "unkown";
-	}
+    @Override
+    public String getConnectionId()
+    {
+        return this.id;
+    }
 
-	@Override
-	public String getHostName() {
-		return "unknown";
-	}
+    @Override
+    public Deserializer< ? > getDeserializer()
+    {
+        return null;
+    }
 
-	@Override
-	public TcpListener getListener() {
-		return this.listener;
-	}
+    @Override
+    public Object getDeserializerStateKey()
+    {
+        return null;
+    }
 
-	@Override
-	public Object getPayload() throws Exception {
-		return null;
-	}
+    @Override
+    public String getHostAddress()
+    {
+        return "unkown";
+    }
 
-	@Override
-	public int getPort() {
-		return 0;
-	}
+    @Override
+    public String getHostName()
+    {
+        return "unkown";
+    }
 
-	@Override
-	public Serializer<?> getSerializer() {
-		return null;
-	}
+    @Override
+    public TcpListener getListener()
+    {
+        return this.listener;
+    }
 
-	@Override
-	public long incrementAndGetConnectionSequence() {
-		return 0;
-	}
+    @Override
+    public Object getPayload() throws Exception
+    {
+        return null;
+    }
 
-	@Override
-	public boolean isOpen() {
-		return false;
-	}
+    @Override
+    public int getPort()
+    {
+        return 0;
+    }
 
-	@Override
-	public boolean isServer() {
-		return false;
-	}
+    @Override
+    public Serializer< ? > getSerializer()
+    {
+        return null;
+    }
 
-	@Override
-	public boolean isSingleUse() {
-		return false;
-	}
+    @Override
+    public long incrementAndGetConnectionSequence()
+    {
+        return 0;
+    }
 
-	@Override
-	public void registerListener(TcpListener arg0) {
-	}
+    @Override
+    public boolean isOpen()
+    {
+        return false;
+    }
 
-	@Override
-	public void registerSender(TcpSender arg0) {
-	}
+    @Override
+    public boolean isServer()
+    {
+        return false;
+    }
 
-	@Override
-	public void send(Message<?> message) throws Exception {
-		this.socket.writeTextFrame((String) message.getPayload());
-	}
+    @Override
+    public boolean isSingleUse()
+    {
+        return false;
+    }
 
-	@Override
-	public void setDeserializer(Deserializer<?> arg0) {
-	}
+    @Override
+    public void send(Message< ? > message) throws Exception
+    {
 
-	@Override
-	public void setMapper(TcpMessageMapper arg0) {
-	}
+        Optional<Object> vertxBody = VertxHelper.getVertxBody(message);
+        if (vertxBody.isPresent())
+        {
+            this.socket.writeFrame(WebSocketFrame.textFrame((String) vertxBody.get(), true));
+        }
 
-	@Override
-	public void setSerializer(Serializer<?> arg0) {
-	}
-
-	@Override
-	public void setSingleUse(boolean arg0) {
-	}
+    }
 
 }
-
