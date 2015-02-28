@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2012 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,49 +24,73 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.integration.Message;
-import org.springframework.integration.annotation.Header;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.integration.ip.IpHeaders;
 import org.springframework.integration.support.MessageBuilder;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.handler.annotation.Header;
+
+import io.vertx.core.Vertx;
+
 
 /**
  * @author Gary Russell
- *
+ * @author fbalicchia
  */
-public class DemoService {
+public class DemoService
+{
 
-	private static final Log logger = LogFactory.getLog(DemoService.class);
 
-	private final Map<String, AtomicInteger> clients = new HashMap<>();
+    @Autowired
+    private Vertx vertxInstance;
 
-	private final Map<String, AtomicInteger> paused = new HashMap<>();
+    private static final Log logger = LogFactory.getLog(DemoService.class);
 
-	public void startStop(String command, @Header(IpHeaders.CONNECTION_ID) String connectionId) {
-		if ("stop".equalsIgnoreCase(command)) {
-			AtomicInteger clientInt = clients.remove(connectionId);
-			if (clientInt != null) {
-				paused.put(connectionId, clientInt);
-			}
-			logger.info("Connection " + connectionId + " stopped");
-		}
-		else if ("start".equalsIgnoreCase(command)) {
-			AtomicInteger clientInt = paused.remove(connectionId);
-			clientInt = clientInt == null ? new AtomicInteger() : clientInt;
-			clients.put(connectionId, clientInt);
-			logger.info("Connection " + connectionId + " (re)started");
-		}
-	}
+    private final Map<String, AtomicInteger> clients = new HashMap<>();
 
-	public List<Message<?>> getNext() {
-		List<Message<?>> messages = new ArrayList<>();
-		for (Entry<String, AtomicInteger> entry : clients.entrySet()) {
-			Message<String> message = MessageBuilder.withPayload(Integer.toString(entry.getValue().incrementAndGet()))
-					.setHeader(IpHeaders.CONNECTION_ID, entry.getKey())
-					.build();
-			messages.add(message);
-			logger.info("Sending " + message.getPayload() + " to connection " + entry.getKey());
-		}
-		return messages;
-	}
+    private final Map<String, AtomicInteger> paused = new HashMap<>();
+
+    public void startStop(String command, @Header(IpHeaders.CONNECTION_ID) String connectionId)
+    {
+
+        if(vertxInstance == null)
+        {
+            System.out.println("ciao mondo");
+        }
+
+
+        if ("stop".equalsIgnoreCase(command))
+        {
+            AtomicInteger clientInt = clients.remove(connectionId);
+            if (clientInt != null)
+            {
+                paused.put(connectionId, clientInt);
+            }
+            logger.info("Connection " + connectionId + " stopped");
+        }
+        else if ("start".equalsIgnoreCase(command))
+        {
+            AtomicInteger clientInt = paused.remove(connectionId);
+            clientInt = clientInt == null ? new AtomicInteger() : clientInt;
+            clients.put(connectionId, clientInt);
+            logger.info("Connection " + connectionId + " (re)started");
+        }
+    }
+
+    public List<Message< ? >> getNext()
+    {
+        List<Message< ? >> messages = new ArrayList<>();
+        for (Entry<String, AtomicInteger> entry : clients.entrySet())
+        {
+            Message<String> message = MessageBuilder
+                .withPayload(Integer.toString(entry.getValue().incrementAndGet()))
+                .setHeader(IpHeaders.CONNECTION_ID, entry.getKey())
+                .build();
+            messages.add(message);
+            logger.info("Sending " + message.getPayload() + " to connection " + entry.getKey());
+        }
+        return messages;
+    }
 
 }

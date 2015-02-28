@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2012 the original author or authors.
+ * Copyright 2002-2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,101 +22,110 @@ import org.springframework.integration.ip.IpHeaders;
 import org.springframework.integration.ip.tcp.connection.AbstractServerConnectionFactory;
 import org.springframework.integration.ip.tcp.connection.TcpListener;
 import org.springframework.integration.support.MessageBuilder;
-import org.vertx.java.core.Handler;
-import org.vertx.java.core.Vertx;
-import org.vertx.java.core.buffer.Buffer;
-import org.vertx.java.core.http.HttpServer;
-import org.vertx.java.core.http.HttpServerRequest;
-import org.vertx.java.core.http.ServerWebSocket;
+
+import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpServer;
+import io.vertx.core.http.HttpServerOptions;
+
 
 /**
  * @author Gary Russell
- *
+ * @author fbalicchia
  */
-public class WebSocketServer extends AbstractServerConnectionFactory implements SmartLifecycle {
+public class WebSocketServer extends AbstractServerConnectionFactory implements SmartLifecycle
+{
 
-	public WebSocketServer(int port) {
-		super(port);
-	}
+    public WebSocketServer(int port)
+    {
+        super(port);
+    }
 
-	private HttpServer server;
+    private HttpServer server;
 
-	private volatile boolean running;
+    private volatile boolean running;
 
-	public synchronized void start() {
-		if (this.running) {
-			return;
-		}
-		this.server = Vertx.newVertx().createHttpServer()
-				.websocketHandler(new Handler<ServerWebSocket>() {
-					public void handle(final ServerWebSocket ws) {
-						final String correlationId = UUID.randomUUID()
-								.toString();
-						final TcpListener listener = WebSocketServer.this.getListener();
-						WebSocketConnection connection = new WebSocketConnection(
-								correlationId, ws, listener);
-						WebSocketServer.this.getSender().addNewConnection(connection);
-						if (ws.path.equals("/myapp")) {
-							ws.dataHandler(new Handler<Buffer>() {
-								public void handle(Buffer data) {
-									listener.onMessage(MessageBuilder
-											.withPayload(data.toString())
-											.setCorrelationId(correlationId)
-											.setHeader(IpHeaders.CONNECTION_ID, correlationId)
-											.build());
-								}
-							});
-						} else {
-							ws.reject();
-						}
-					}
-				}).requestHandler(new Handler<HttpServerRequest>() {
-					public void handle(HttpServerRequest req) {
-						if (req.path.equals("/"))
-							req.response.sendFile("ws.html"); // Serve the html
-					}
-				}).listen(this.getPort());
-		this.running = true;
-	}
+    @Override
+	public synchronized void start()
+    {
+        if (this.running)
+        {
+            return;
+        }
 
-	public void stop() {
-		this.running = false;
-		this.server.close();
-	}
+        HttpServerOptions httpServerOptions = new HttpServerOptions();
+        httpServerOptions.setPort(this.getPort());
 
-	@Override
-	public boolean isRunning() {
-		return this.running;
-	}
+        this.server = Vertx.factory
+            .vertx()
+            .createHttpServer(httpServerOptions)
+            .websocketHandler(
+                ws -> {
+                    final String correlationId = UUID.randomUUID().toString();
+                    final TcpListener listener = WebSocketServer.this.getListener();
+                    WebSocketConnection connection = new WebSocketConnection(correlationId, ws, listener);
+                    WebSocketServer.this.getSender().addNewConnection(connection);
+                    if (ws.path().equals("/myapp"))
+                    {
+                        ws.handler(data -> {
 
-	@Override
-	public int getPhase() {
-		// TODO Auto-generated method stub
-		return 0;
-	}
+                            listener.onMessage(MessageBuilder
+                                .withPayload(data.toString())
+                                .setCorrelationId(correlationId)
+                                .setHeader(IpHeaders.CONNECTION_ID, correlationId)
+                                .build());
+                        });
 
-	@Override
-	public boolean isAutoStartup() {
-		// TODO Auto-generated method stub
-		return false;
-	}
+                    }
+                    else
+                    {
+                        ws.reject();
+                    }
+                })
+            .requestHandler(req -> {
+                if (req.path().equals("/")) {
+					req.response().sendFile("ws.html");
+				}
+            })
+            .listen();
+        this.running = true;
+    }
 
-	@Override
-	public void stop(Runnable callback) {
-		this.stop();
-		callback.run();
-	}
+    @Override
+	public void stop()
+    {
+        this.running = false;
+        this.server.close();
+    }
 
-	@Override
-	public void run() {
-		// TODO Auto-generated method stub
+    @Override
+    public boolean isRunning()
+    {
+        return this.running;
+    }
 
-	}
+    @Override
+    public int getPhase()
+    {
+        return 0;
+    }
 
-	@Override
-	public void close() {
-		// TODO Auto-generated method stub
+    @Override
+    public boolean isAutoStartup()
+    {
+        return false;
+    }
 
-	}
+    @Override
+    public void stop(Runnable callback)
+    {
+        this.stop();
+        callback.run();
+    }
+
+    @Override
+    public void run()
+    {
+
+    }
 
 }

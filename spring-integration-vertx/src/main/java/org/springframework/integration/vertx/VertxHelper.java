@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2015 the original author or authors.
+ * Copyright 2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,23 +15,22 @@
  */
 package org.springframework.integration.vertx;
 
-import org.springframework.context.support.AbstractApplicationContext;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
+import java.util.Optional;
 
+import org.springframework.messaging.Message;
 
 /**
- * @author Gary Russell
+ *
  * @author fbalicchia
+ *
  */
-public class Main
+public class VertxHelper
 {
 
-    public static void main(String[] args) throws Exception
+    public static Optional<Object> getVertxBody(Message< ? > message)
     {
-        AbstractApplicationContext ctx = new ClassPathXmlApplicationContext(
-            "META-INF/spring/integration/ws-context.xml");
-        System.out.println("Hit enter to terminate...");
-        System.in.read();
-        ctx.close();
+        return Optional.ofNullable(message.getPayload());
+
     }
+
 }
