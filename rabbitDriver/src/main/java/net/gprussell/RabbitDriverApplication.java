@@ -92,6 +92,7 @@ public class RabbitDriverApplication {
 				final int count = Integer.valueOf(env.getProperty("count"));
 				final String queue = env.getProperty("queue");
 				int instances = Integer.valueOf(env.getProperty("instances"));
+				final int messageSize = Integer.valueOf(env.getProperty("spring.message.size"));
 				final boolean useTemplate = Boolean.valueOf(env.getProperty("useTemplate"));
 				ExecutorService exec = Executors.newCachedThreadPool();
 				StopWatch stopwatch = new StopWatch();
@@ -152,6 +153,7 @@ public class RabbitDriverApplication {
 						}
 
 						private byte[] buildMessage(int i) {
+							byte message[] = new byte[messageSize];
 							try {
 								ByteArrayOutputStream acc = new ByteArrayOutputStream();
 								DataOutputStream d = new DataOutputStream(acc);
@@ -163,6 +165,10 @@ public class RabbitDriverApplication {
 								byte[] body = acc.toByteArray();
 								if (i % 100000 == 99999) {
 									System.out.println(Thread.currentThread().getName() + " sent " + (i + 1));
+								}
+								if (body.length <= messageSize) {
+									System.arraycopy(body, 0, message, 0, body.length);
+									return message;
 								}
 								return body;
 							}
