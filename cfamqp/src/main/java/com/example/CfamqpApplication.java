@@ -30,8 +30,8 @@ public class CfamqpApplication {
 		RabbitTemplate template = context.getBean(RabbitTemplate.class);
 		String exchange = context.getBean(DirectExchange.class).getName();
 		BlockingQueue<?> q = context.getBean(BlockingQueue.class);
-		int count = 4000;
-		int rate = 100;
+		int count = 100000;
+		int rate = 1000;
 		int actualRate = 0;
 		int out = 0;
 		StopWatch watch = new StopWatch();
@@ -89,6 +89,7 @@ public class CfamqpApplication {
 	public SimpleMessageListenerContainer container(ConnectionFactory connectionFactory, LinkedBlockingQueue<String> results) {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
 		container.setQueues(queue());
+		container.setPrefetchCount(1);
 		container.setMessageListener(new MessageListenerAdapter(new Object() {
 			@SuppressWarnings("unused")
 			public void handleMessage(String message) {
