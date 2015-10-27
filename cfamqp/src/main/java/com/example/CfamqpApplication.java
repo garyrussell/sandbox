@@ -53,7 +53,7 @@ public class CfamqpApplication {
 			watch.stop();
 		}
 		finally {
-//			context.close();
+			context.close();
 			System.out.println(watch.prettyPrint());
 			System.out.println("Actual send rate " + actualRate + "/s");
 		}
