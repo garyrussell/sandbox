@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>org.springframework.integration.samples</groupId>
-	<artifactId>stb-poc</artifactId>
+	<artifactId>stb-ingest</artifactId>
 	<version>1.0.0.BUILD-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
