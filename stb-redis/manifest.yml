@@ -1,0 +1,10 @@
+applications:
+- name: stb-redis
+  memory: 256M
+  instances: 1
+  host: sr-${random-word}
+  domain: cfapps.pez.pivotal.io
+  path: target/stb-redis-1.0.0.BUILD-SNAPSHOT.jar
+  env: {
+    }
+ 
