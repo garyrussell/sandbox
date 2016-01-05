@@ -1,0 +1,10 @@
+applications:
+- name: stb-ingest
+  memory: 256M
+  instances: 1
+  host: si-${random-word}
+  domain: cfapps.pez.pivotal.io
+  path: target/stb-ingest-1.0.0.BUILD-SNAPSHOT.jar
+  env: {
+    }
+ 
