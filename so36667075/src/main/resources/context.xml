@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:int="http://www.springframework.org/schema/integration"
+	xmlns:int-ip="http://www.springframework.org/schema/integration/ip"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/integration/ip http://www.springframework.org/schema/integration/ip/spring-integration-ip.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd">
+
+	<int-ip:tcp-connection-factory id="cf"
+		type="server" port="0" so-timeout="5000"/>
+
+	<int-ip:tcp-inbound-channel-adapter channel="requestChannel" connection-factory="cf" />
+
+	<int:channel id="requestChannel">
+<!-- 		<int:queue /> -->
+	</int:channel>
+
+	<int:poller default="true" fixed-delay="1000" />
+
+	<int:service-activator input-channel="requestChannel" output-channel="replyChannel"
+		expression="payload" />
+
+	<int:channel id="replyChannel" />
+
+	<int-ip:tcp-outbound-channel-adapter connection-factory="cf" channel="replyChannel" />
+
+</beans>
