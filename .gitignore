@@ -9,6 +9,9 @@
 .idea
 .project
 .settings
+.mvn
+mvnw
+mvnw.cmd
 bin
 build
 nohup.out
