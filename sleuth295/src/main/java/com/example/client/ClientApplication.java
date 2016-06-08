@@ -11,6 +11,7 @@ import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.dsl.IntegrationFlows;
 import org.springframework.integration.dsl.amqp.Amqp;
 
+import com.example.ExceptionWrapper;
 import com.example.service.SomeService;
 
 @SpringBootApplication
@@ -19,8 +20,13 @@ public class ClientApplication {
 
 	public static void main(String[] args) {
 		ConfigurableApplicationContext context = SpringApplication.run(ClientApplication.class, args);
-		System.out.println(context.getBean(Client.class).send());
-		context.close();
+		try {
+			System.out.println(context.getBean(Client.class).send("FOO"));
+			System.out.println(context.getBean(Client.class).send("foo")); // will fail
+		}
+		finally {
+			context.close();
+		}
 	}
 
 	@Bean
@@ -32,6 +38,9 @@ public class ClientApplication {
 	public IntegrationFlow toAmqpFlow(RabbitTemplate amqpTemplate) {
 		return IntegrationFlows.from("toAmqp")
 				.handle(Amqp.outboundGateway(amqpTemplate).routingKey("foo"))
+				.route(p -> p instanceof ExceptionWrapper,
+					m -> m.subFlowMapping("true", sf -> sf.transform("payload.throwable"))
+					.resolutionRequired(false)) // good results fall through and are returned
 				.get();
 	}
 

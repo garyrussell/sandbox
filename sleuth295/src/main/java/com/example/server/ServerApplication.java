@@ -16,15 +16,22 @@
 
 package com.example.server;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
+import org.springframework.integration.annotation.MessageEndpoint;
+import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.dsl.IntegrationFlows;
 import org.springframework.integration.dsl.amqp.Amqp;
+import org.springframework.messaging.MessagingException;
 
+import com.example.ExceptionWrapper;
 import com.example.service.SomeServiceImpl;
 
 /**
@@ -43,7 +50,7 @@ public class ServerApplication {
 
 	@Bean
 	public IntegrationFlow fromAmqp(ConnectionFactory connectionFactory) {
-		return IntegrationFlows.from(Amqp.inboundGateway(connectionFactory, "foo"))
+		return IntegrationFlows.from(Amqp.inboundGateway(connectionFactory, "foo").errorChannel("errors"))
 				.enrichHeaders(h -> h.headerExpression("bar", "payload[1]"))
 				.transform("payload[0]")
 				.handle("service", "process")
@@ -53,6 +60,24 @@ public class ServerApplication {
 	@Bean
 	public SomeServiceImpl service() {
 		return new SomeServiceImpl();
+	}
+
+	@Bean
+	public ErrorHandler errorHandler() {
+		return new ErrorHandler();
+	}
+
+	@MessageEndpoint
+	public static class ErrorHandler {
+
+		private final Log logger = LogFactory.getLog(this.getClass());
+
+		@ServiceActivator(inputChannel = "errors")
+		public ExceptionWrapper exception(MessagingException e) {
+			this.logger.error("Failed: " + e.getFailedMessage());
+			return new ExceptionWrapper(e.getCause());
+		}
+
 	}
 
 }

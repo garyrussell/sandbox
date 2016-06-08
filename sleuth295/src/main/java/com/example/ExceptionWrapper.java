@@ -24,20 +24,16 @@ import java.io.Serializable;
  *
  */
 @SuppressWarnings("serial")
-public class Foo implements Serializable {
+public class ExceptionWrapper implements Serializable {
 
-	private String field = "foo";
+	private final Throwable throwable;
 
-	public Foo(String fooValue) {
-		field = fooValue;
+	public ExceptionWrapper(Throwable throwable) {
+		this.throwable = throwable;
 	}
 
-	public String getField() {
-		return this.field;
-	}
-
-	public void setField(String field) {
-		this.field = field;
+	public Throwable getThrowable() {
+		return this.throwable;
 	}
 
 }

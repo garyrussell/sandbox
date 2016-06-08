@@ -32,6 +32,9 @@ public class SomeServiceImpl implements SomeService {
 
 	@Override
 	public Baz process(@Payload Foo foo, @Header("bar") Bar bar) {
+		if (foo.getField().equals("foo")) {
+			throw new RuntimeException("foo failed");
+		}
 		return new Baz(foo.getField() + bar.getField());
 	}
 

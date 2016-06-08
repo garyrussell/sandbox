@@ -33,8 +33,8 @@ public class Client {
 	@Autowired
 	private SomeService service;
 
-	public String send() {
-		Baz result = this.service.process(new Foo(), new Bar());
+	public String send(String fooValue) {
+		Baz result = this.service.process(new Foo(fooValue), new Bar());
 		if (result == null) {
 			throw new RuntimeException("No reply");
 		}
