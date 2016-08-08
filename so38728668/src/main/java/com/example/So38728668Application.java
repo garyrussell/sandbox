@@ -4,17 +4,13 @@ import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
-import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.amqp.SimpleRabbitListenerContainerFactoryConfigurer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.messaging.handler.annotation.Header;
@@ -35,16 +31,6 @@ public class So38728668Application {
 	@Bean
 	public Queue so38728668() {
 		return new Queue("so38728668");
-	}
-
-	@Bean
-	public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(
-			SimpleRabbitListenerContainerFactoryConfigurer configurer,
-			ConnectionFactory connectionFactory) {
-		SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
-		factory.setAcknowledgeMode(AcknowledgeMode.MANUAL);
-		configurer.configure(factory, connectionFactory);
-		return factory;
 	}
 
 	@Bean
