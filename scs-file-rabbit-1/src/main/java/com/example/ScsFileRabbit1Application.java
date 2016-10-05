@@ -10,16 +10,15 @@ import java.util.Map;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.springframework.amqp.core.AmqpAdmin;
+import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.amqp.core.AnonymousQueue;
 import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.rabbit.core.RabbitAdmin;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.stream.annotation.EnableBinding;
 import org.springframework.cloud.stream.messaging.Processor;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.integration.annotation.ServiceActivator;
 
@@ -41,7 +40,10 @@ public class ScsFileRabbit1Application {
 		private static final Log logger = LogFactory.getLog(FileToRabbit.class);
 
 		@Autowired
-		private ApplicationContext context;
+		private AmqpTemplate template;
+
+		@Autowired
+		private AmqpAdmin admin;
 
 		@ServiceActivator(inputChannel = Processor.INPUT, outputChannel = Processor.OUTPUT)
 		public Map<String, String> process(Object input) {
@@ -56,22 +58,20 @@ public class ScsFileRabbit1Application {
 				logger.error("Unsupported inbound payload " + input.getClass());
 				return null;
 			}
-			RabbitAdmin admin = this.context.getBean(RabbitAdmin.class); // need to figure out why @Autowired doesn't work
 			String queueName = new AnonymousQueue.Base64UrlNamingStrategy().generateName();
 			Queue queue = new Queue(queueName, true, false, false);
-			admin.declareQueue(queue);
+			this.admin.declareQueue(queue);
 			try {
 				BufferedReader reader = new BufferedReader(new FileReader(file));
-				RabbitTemplate template = context.getBean(RabbitTemplate.class);
 				String line;
 				while ((line = reader.readLine()) != null) {
-					template.convertAndSend(queueName, line);
+					this.template.convertAndSend(queueName, line);
 				}
 				reader.close();
 			}
 			catch (IOException e) {
 				logger.error("Error processing input " + input, e);
-				admin.deleteQueue(queueName);
+				this.admin.deleteQueue(queueName);
 				return null;
 			}
 			return Collections.singletonMap("queueName", queueName);

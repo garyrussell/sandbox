@@ -6,8 +6,8 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
-import org.springframework.amqp.rabbit.core.RabbitAdmin;
+import org.springframework.amqp.core.AmqpAdmin;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.listener.ListenerContainerIdleEvent;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;
@@ -17,7 +17,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.stream.annotation.EnableBinding;
 import org.springframework.cloud.stream.messaging.Processor;
 import org.springframework.cloud.stream.messaging.Sink;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
@@ -41,7 +40,10 @@ public class ScsFileRabbit2Application {
 		private static final Log logger = LogFactory.getLog(HandleRabbit.class);
 
 		@Autowired
-		private ApplicationContext context;
+		private AmqpAdmin admin;
+
+		@Autowired
+		private ConnectionFactory connectionFactory;
 
 		@ServiceActivator(inputChannel = Processor.INPUT)
 		public void handler(Map<String, String> input) {
@@ -51,8 +53,7 @@ public class ScsFileRabbit2Application {
 				return;
 			}
 			logger.info("Processing: " + queueName);
-			SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(
-					this.context.getBean(CachingConnectionFactory.class));
+			SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(this.connectionFactory);
 			container.setQueueNames(queueName);
 			container.setMessageListener(new MessageListenerAdapter(new Listener()));
 			container.setIdleEventInterval(10000);
@@ -81,8 +82,7 @@ public class ScsFileRabbit2Application {
 			}
 			logger.info("Container idle - stopping");
 			container.stop();
-			RabbitAdmin admin = this.context.getBean(RabbitAdmin.class); // need to figure out why @Autowired doesn't work
-			admin.deleteQueue(queueName);
+			this.admin.deleteQueue(queueName);
 		}
 
 	}
