@@ -11,7 +11,12 @@ import org.springframework.amqp.rabbit.core.RabbitManagementTemplate;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.EnvironmentAware;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.env.Environment;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @SpringBootApplication
 public class RepartitionApplication {
@@ -21,36 +26,36 @@ public class RepartitionApplication {
 		TopicExchange exchange = context.getBean("foo", TopicExchange.class);
 		RabbitAdmin admin = context.getBean(RabbitAdmin.class);
 		admin.getQueueProperties("foo-0"); // kick start - creates a connection
-		RabbitManagementTemplate rmt = new RabbitManagementTemplate();
-		Optional<Integer> max = maxConsumerPartition(rmt);
+		BindingsController controller = context.getBean(BindingsController.class);
+		RabbitManagementTemplate rmt = controller.createTemplate();
+		String virtualHost = controller.getVirtualHost();
+		Optional<Integer> max = maxConsumerPartition(rmt, virtualHost);
 		while (!max.isPresent()) {
 			Thread.sleep(1000);
-			max = maxConsumerPartition(rmt);
+			max = maxConsumerPartition(rmt, virtualHost);
 		}
 		int currentMax = max.get();
 		boolean stop = false;
-		boolean rebalancedUp = false;
 		while (!stop) {
-			Thread.sleep(10000);
-			int newMax = maxConsumerPartition(rmt).get();
+			Thread.sleep(5000);
+			int newMax = maxConsumerPartition(rmt, virtualHost).get();
 			System.out.println("New high partition: " + newMax);
 			if (newMax > currentMax) {
 				System.out.println("Partitions increased to " + newMax + ", rebalancing...");
 			}
 			else if (newMax < currentMax) {
 				System.out.println("Partitions decreased to " + newMax + ", rebalancing...");
-				stop = true;
+//				stop = true;
 			}
-			if (newMax == 0 && !rebalancedUp) {
+			if (newMax == 1) {
+				// simulate the highest instance going away
+				admin.deleteQueue("foo-1");
+			}
+			else {
 				// simulate a new instance starting up
 				Queue foo1 = new Queue("foo-1");
 				admin.declareQueue(foo1);
 				admin.declareBinding(BindingBuilder.bind(foo1).to(exchange).with("foo-1"));
-				rebalancedUp = true;
-			}
-			else {
-				// simulate the highest instance going away
-				admin.deleteQueue("foo-1");
 			}
 			currentMax = newMax;
 		}
@@ -59,8 +64,8 @@ public class RepartitionApplication {
 		context.close();
 	}
 
-	private static Optional<Integer> maxConsumerPartition(RabbitManagementTemplate rmt) {
-		return rmt.getBindingsForExchange("/", "foo")
+	private static Optional<Integer> maxConsumerPartition(RabbitManagementTemplate rmt, String virtualHost) {
+		return rmt.getBindingsForExchange(virtualHost, "foo")
 			.stream()
 			.filter(b -> b.isDestinationQueue() && b.getDestination().startsWith("foo-"))
 			.map(b -> Integer.parseInt(b.getDestination().substring(4)))
@@ -80,6 +85,54 @@ public class RepartitionApplication {
 	@Bean
 	public Binding fooBinding() {
 		return BindingBuilder.bind(fooQueue()).to(foo()).with("foo-0");
+	}
+
+	@RestController
+	@RequestMapping("/foo")
+	public static class BindingsController implements EnvironmentAware {
+
+		private Environment environment;
+
+		@Override
+		public void setEnvironment(Environment environment) {
+			this.environment = environment;
+		}
+
+		@GetMapping(name = "foo")
+		public String foo() throws Exception {
+			StringBuilder builder = new StringBuilder();
+			String virtualHost = getVirtualHost();
+			RabbitManagementTemplate template = createTemplate();
+			builder.append("<br/>" + template.getBindings(virtualHost));
+			return builder.toString();
+		}
+
+		private String getVirtualHost() {
+			String virtualHost = environment.getProperty("cloud.services.rabbitmq.connection.virtualhost");
+			if (virtualHost == null) {
+				virtualHost = "/";
+			}
+			return virtualHost;
+		}
+
+		public RabbitManagementTemplate createTemplate() {
+			String uri = environment.getProperty("cloud.services.rabbitmq.connection.managementuri");
+			if (uri == null) {
+				uri = "http://localhost:15672/api/";
+			}
+			String user = environment.getProperty("cloud.services.rabbitmq.connection.username");
+			if (user == null) {
+				user = "guest";
+			}
+			String pw = environment.getProperty("cloud.services.rabbitmq.connection.password");
+			if (pw == null) {
+				pw = "guest";
+			}
+//			System.out.println(uri + "\n" + user + "\n" + pw);
+			RabbitManagementTemplate template = new RabbitManagementTemplate(uri, user, pw);
+			return template;
+		}
+
 	}
 
 }
