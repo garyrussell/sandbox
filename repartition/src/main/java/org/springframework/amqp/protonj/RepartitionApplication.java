@@ -1,5 +1,7 @@
 package org.springframework.amqp.protonj;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Optional;
 
 import org.springframework.amqp.core.Binding;
@@ -117,19 +119,27 @@ public class RepartitionApplication {
 
 		public RabbitManagementTemplate createTemplate() {
 			String uri = environment.getProperty("cloud.services.rabbitmq.connection.managementuri");
+			String username = "guest";
+			String password = "guest";
 			if (uri == null) {
-				uri = "http://localhost:15672/api/";
+				uri = "http://guest:guest@localhost:15672/api/";
 			}
-			String user = environment.getProperty("cloud.services.rabbitmq.connection.username");
-			if (user == null) {
-				user = "guest";
+			try {
+				URI theUri = new URI(uri);
+				String userInfo = theUri.getUserInfo();
+				if (userInfo != null) {
+					String[] userParts = userInfo.split(":");
+					if (userParts.length > 0) {
+						username = userParts[0];
+					}
+					if (userParts.length > 1) {
+						password = userParts[1];
+					}
+				}
 			}
-			String pw = environment.getProperty("cloud.services.rabbitmq.connection.password");
-			if (pw == null) {
-				pw = "guest";
+			catch (URISyntaxException e) {
 			}
-//			System.out.println(uri + "\n" + user + "\n" + pw);
-			RabbitManagementTemplate template = new RabbitManagementTemplate(uri, user, pw);
+			RabbitManagementTemplate template = new RabbitManagementTemplate(uri, username, password);
 			return template;
 		}
 
