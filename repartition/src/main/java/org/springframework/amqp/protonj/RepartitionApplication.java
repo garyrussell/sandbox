@@ -139,8 +139,7 @@ public class RepartitionApplication {
 			}
 			catch (URISyntaxException e) {
 			}
-			RabbitManagementTemplate template = new RabbitManagementTemplate(uri, username, password);
-			return template;
+			return new RabbitManagementTemplate(uri, username, password);
 		}
 
 	}
