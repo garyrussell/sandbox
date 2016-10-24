@@ -1,17 +1,20 @@
-package org.springframework.amqp.protonj;
+package org.springframework.amqp.producer;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Optional;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.TopicExchange;
-import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitManagementTemplate;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.EnvironmentAware;
 import org.springframework.context.annotation.Bean;
@@ -21,72 +24,49 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @SpringBootApplication
-public class RepartitionApplication {
+@EnableConfigurationProperties(ProducerProperties.class)
+public class RepartitionProducerApplication {
 
 	public static void main(String[] args) throws Exception {
-		ConfigurableApplicationContext context = SpringApplication.run(RepartitionApplication.class, args);
-		TopicExchange exchange = context.getBean("foo", TopicExchange.class);
-		RabbitAdmin admin = context.getBean(RabbitAdmin.class);
-		admin.getQueueProperties("foo-0"); // kick start - creates a connection
-		BindingsController controller = context.getBean(BindingsController.class);
-		RabbitManagementTemplate rmt = controller.createTemplate();
-		String virtualHost = controller.getVirtualHost();
-		Optional<Integer> max = maxConsumerPartition(rmt, virtualHost);
-		while (!max.isPresent()) {
-			Thread.sleep(1000);
-			max = maxConsumerPartition(rmt, virtualHost);
+		ConfigurableApplicationContext context = SpringApplication.run(RepartitionProducerApplication.class, args);
+		TopicExchange exchange = context.getBean("exchange", TopicExchange.class);
+		RabbitTemplate template = context.getBean(RabbitTemplate.class);
+		@SuppressWarnings("unchecked")
+		List<Queue> queues = context.getBean("queues", List.class);
+		for (int i = 0; i < 30; i++) {
+			template.convertAndSend(exchange.getName(), queues.get(i % queues.size()).getName(), "foo");
 		}
-		int currentMax = max.get();
-		boolean stop = false;
-		while (!stop) {
-			Thread.sleep(5000);
-			int newMax = maxConsumerPartition(rmt, virtualHost).get();
-			System.out.println("New high partition: " + newMax);
-			if (newMax > currentMax) {
-				System.out.println("Partitions increased to " + newMax + ", rebalancing...");
-			}
-			else if (newMax < currentMax) {
-				System.out.println("Partitions decreased to " + newMax + ", rebalancing...");
-//				stop = true;
-			}
-			if (newMax == 1) {
-				// simulate the highest instance going away
-				admin.deleteQueue("foo-1");
-			}
-			else {
-				// simulate a new instance starting up
-				Queue foo1 = new Queue("foo-1");
-				admin.declareQueue(foo1);
-				admin.declareBinding(BindingBuilder.bind(foo1).to(exchange).with("foo-1"));
-			}
-			currentMax = newMax;
-		}
-		admin.deleteQueue("foo-0");
-		admin.deleteExchange("foo");
+		System.in.read();
+//		RabbitAdmin admin = context.getBean(RabbitAdmin.class);
+//		queues.forEach(q -> admin.deleteQueue(q.getName()));
+//		admin.deleteExchange(exchange.getName());
 		context.close();
 	}
 
-	private static Optional<Integer> maxConsumerPartition(RabbitManagementTemplate rmt, String virtualHost) {
-		return rmt.getBindingsForExchange(virtualHost, "foo")
-			.stream()
-			.filter(b -> b.isDestinationQueue() && b.getDestination().startsWith("foo-"))
-			.map(b -> Integer.parseInt(b.getDestination().substring(4)))
-			.max(Integer::compare);
-	}
+	@Autowired
+	private ProducerProperties producerProperties;
 
 	@Bean
-	public TopicExchange foo() {
+	public TopicExchange exchange() {
 		return new TopicExchange("foo");
 	}
 
 	@Bean
-	public Queue fooQueue() {
-		return new Queue("foo-0");
+	public List<Queue> queues() {
+		List<Queue> queues = new ArrayList<>();
+		for (int i = 0; i < this.producerProperties.getPartitionCount(); i++) {
+			queues.add(new Queue(this.producerProperties.getDestination() + "-" + i));
+		}
+		return queues ;
 	}
 
 	@Bean
-	public Binding fooBinding() {
-		return BindingBuilder.bind(fooQueue()).to(foo()).with("foo-0");
+	public List<Binding> fooBinding() {
+		List<Binding> bindings = new ArrayList<>();
+		for (int i = 0; i < this.producerProperties.getPartitionCount(); i++) {
+			bindings.add(BindingBuilder.bind(queues().get(i)).to(exchange()).with(queues().get(i).getName()));
+		}
+		return bindings;
 	}
 
 	@RestController
