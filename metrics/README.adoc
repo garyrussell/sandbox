@@ -1,0 +1,45 @@
+With https://github.com/garyrussell/spring-integration/commit/c5ec5b922cc09cd5dd0006bb5fc41d7953e95312[this commit to the IntegrationMBeanExporter] and these properties...
+
+[source]
+----
+spring.cloud.stream.bindings.input.destination=metricsIn
+spring.cloud.stream.bindings.input.group=metricsTest
+
+spring.cloud.stream.bindings.output.destination=metricsOut
+
+stream.name=foo
+app.label=bar
+----
+
+The actuator metrics look like this...
+
+[source]
+----
+"integration.channel.foo.bar.output.errorRate.mean": 0,
+"integration.channel.foo.bar.output.errorRate.max": 0,
+"integration.channel.foo.bar.output.errorRate.min": 0,
+"integration.channel.foo.bar.output.errorRate.stdev": 0,
+"integration.channel.foo.bar.output.errorRate.count": 0,
+"integration.channel.foo.bar.output.sendCount": 1,
+"integration.channel.foo.bar.output.sendRate.mean": 2.7906244795748822,
+"integration.channel.foo.bar.output.sendRate.max": 0.358342732001096,
+"integration.channel.foo.bar.output.sendRate.min": 0.358342732001096,
+"integration.channel.foo.bar.output.sendRate.stdev": 0,
+"integration.channel.foo.bar.output.sendRate.count": 1,
+"integration.channel.foo.bar.output.receiveCount": -1,
+"integration.channel.foo.bar.input.errorRate.mean": 0,
+"integration.channel.foo.bar.input.errorRate.max": 0,
+"integration.channel.foo.bar.input.errorRate.min": 0,
+"integration.channel.foo.bar.input.errorRate.stdev": 0,
+"integration.channel.foo.bar.input.errorRate.count": 0,
+"integration.channel.foo.bar.input.sendCount": 1,
+"integration.channel.foo.bar.input.sendRate.mean": 2.858395781851843,
+"integration.channel.foo.bar.input.sendRate.max": 0.3498465839996934,
+"integration.channel.foo.bar.input.sendRate.min": 0.3498465839996934,
+"integration.channel.foo.bar.input.sendRate.stdev": 0,
+"integration.channel.foo.bar.input.sendRate.count": 1,
+"integration.channel.foo.bar.input.receiveCount": -1,
+----
+
+Only the channel metrics are customized for this demo.
+
