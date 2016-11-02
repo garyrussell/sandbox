@@ -51,7 +51,9 @@ public class SpringIntegrationMetricReader implements MetricReader, EnvironmentA
 	public void setEnvironment(Environment environment) {
 		String streamName = environment.getProperty("stream.name");
 		String appLabel = environment.getProperty("app.label");
-		this.appPrefix = streamName + "." + appLabel;
+		if (streamName != null) {
+			this.appPrefix = streamName + "." + appLabel;
+		}
 	}
 
 	@Override
