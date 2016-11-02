@@ -41,7 +41,7 @@ public class SpringIntegrationMetricReader implements MetricReader, EnvironmentA
 
 	private final IntegrationMBeanExporter exporter;
 
-	private String appPrefix = "";
+	private String appPrefix = "integration";
 
 	public SpringIntegrationMetricReader(IntegrationMBeanExporter exporter) {
 		this.exporter = exporter;
