@@ -34,9 +34,10 @@ public class RepartitionProducerApplication {
 		@SuppressWarnings("unchecked")
 		List<Queue> queues = context.getBean("queues", List.class);
 		for (int i = 0; i < 30; i++) {
-			template.convertAndSend(exchange.getName(), queues.get(i % queues.size()).getName(), "foo");
+			String queue = queues.get(i % queues.size()).getName();
+			template.convertAndSend(exchange.getName(), queue, "foo for " + queue);
 		}
-		System.in.read();
+//		System.in.read();
 //		RabbitAdmin admin = context.getBean(RabbitAdmin.class);
 //		queues.forEach(q -> admin.deleteQueue(q.getName()));
 //		admin.deleteExchange(exchange.getName());

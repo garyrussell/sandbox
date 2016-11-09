@@ -3,7 +3,9 @@ package org.springframework.amqp.consumer;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.amqp.core.AmqpTemplate;
@@ -73,7 +75,7 @@ public class RepartitionConsumerApplication {
 
 		@Bean
 		public Binding fooBinding() {
-			return BindingBuilder.bind(instanceQueue()).to(exchange()).with("control.#");
+			return BindingBuilder.bind(instanceQueue()).to(exchange()).with("control.*");
 		}
 
 		@Bean
@@ -90,21 +92,24 @@ public class RepartitionConsumerApplication {
 		}
 
 		private void rebalance(Message m) {
-			System.out.println("Instance: " + this.instanceProperties.getInstanceIndex() + " Rebalancing...");
+			System.out.println(
+					new Date() + " Instance: " + this.instanceProperties.getInstanceIndex() + " Rebalancing...");
 			List<String> queues = queues();
 			int partitions = queues.size();
 			System.out.println("partitions found: " + partitions);
-			long instances = instanceCount();
-			System.out.println("instances found: " + instances);
+			int instances = instanceMax().get() + 1;
+			System.out.println(">>>>>>>>>>> instances found: " + instances);
 			mainListener().removeQueueNames(mainListener().getQueueNames());
-			int queuesPerInstance = (int) (partitions / instances);
+			int queuesPerInstance = partitions / instances;
 			int myFirst = this.instanceProperties.getInstanceIndex() * queuesPerInstance;
 			int myLast = Math.min((this.instanceProperties.getInstanceIndex() + 1) * queuesPerInstance - 1,
 					partitions);
 			if (partitions - myLast < queuesPerInstance) {
 				myLast = partitions - 1;
 			}
-			System.out.println("my first: " + myFirst + ", my last: " + myLast);
+			String destinationPrefix = this.consumerProperties.getDestination() + "-";
+			System.out.println("my first: " + destinationPrefix +  myFirst
+					+ ", my last: " + destinationPrefix + myLast);
 			mainListener().addQueueNames(Arrays.copyOfRange(queues.toArray(), myFirst, myLast + 1, String[].class));
 			System.out.println("Rebalanced");
 		}
@@ -118,20 +123,23 @@ public class RepartitionConsumerApplication {
 				.collect(Collectors.toList());
 		}
 
-		private int instanceCount() {
-			return (int) managementTemplate().getBindingsForExchange(virtualHost(), exchange().getName())
+		private Optional<Integer> instanceMax() {
+			return managementTemplate().getBindingsForExchange(virtualHost(), exchange().getName())
 				.stream()
 				.filter(b -> b.isDestinationQueue()
 						&& b.getDestination().startsWith(this.consumerProperties.getDestination() + ".instance."))
-				.count();
+				.map(b -> Integer.parseInt(b.getDestination().substring(b.getDestination().lastIndexOf('.') + 1)))
+				.max(Integer::compare);
 		}
 
 		@Bean
 		public DirectMessageListenerContainer mainListener() {
 			DirectMessageListenerContainer container = new DirectMessageListenerContainer(this.connectionFactory);
 			container.setMessageListener(m -> {
-				System.out.println("Received new message " + m);
+				System.out.println("Received new message " + new String(m.getBody()));
 			});
+			container.setConsumerTagStrategy(q -> this.environment.getProperty("spring.application.name") + "."
+					+ q + "." + this.instanceProperties.getInstanceIndex());
 			return container;
 		}
 
