@@ -1,0 +1,13 @@
+[source]
+----
+$ telnet localhost 1234
+Trying ::1...
+Connected to localhost.
+Escape character is '^]'.
+foo
+^]
+telnet> quit
+Connection closed.
+----
+
+Results in FOO in queue `output` (the default destination name).
