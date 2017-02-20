@@ -10,4 +10,4 @@ telnet> quit
 Connection closed.
 ----
 
-Results in FOO in queue `output` (the default destination name).
+Results in FOO in a queue bound to exchange `output` (the default destination name).
