@@ -1,0 +1,9 @@
+Apps read 30M records from topic perf
+
+- `com.example.sk` - App just using SK
+- `com.example.sik` - App using SIK over SK
+- `com.example.scst` - App using @StreamListener
+
+The first two seek to zero automatically.
+
+For the SCSt app, run ../kperfSeekZero first.
