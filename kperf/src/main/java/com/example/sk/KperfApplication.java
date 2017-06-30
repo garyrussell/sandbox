@@ -9,6 +9,8 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.TopicPartition;
 
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
@@ -18,12 +20,12 @@ import org.springframework.kafka.listener.MessageListener;
 import org.springframework.kafka.listener.config.ContainerProperties;
 import org.springframework.util.StopWatch;
 
-//@SpringBootApplication
+@SpringBootApplication
 public class KperfApplication implements CommandLineRunner {
 
-//	public static void main(String[] args) {
-//		SpringApplication.run(KperfApplication.class, args).close();
-//	}
+	public static void main(String[] args) {
+		SpringApplication.run(KperfApplication.class, args).close();
+	}
 
 //	@Autowired
 //	private KafkaTemplate<byte[], byte[]> template;
