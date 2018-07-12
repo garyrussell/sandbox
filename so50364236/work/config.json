@@ -1,0 +1,5 @@
+{
+  "id" : "241b43bb-cb94-4eaf-9db1-644da23037df",
+  "name" : "${broker.name}",
+  "modelVersion" : "7.0"
+}
