@@ -21,3 +21,4 @@ logs
 target
 build.log
 .springBeans
+.DS_Store
